@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb-deployment
+  labels:
+    app: mongodb
+spec:
+  replicas: 1 # Database should use StatefulSet instead.
+  selector:
+    # you can label anything
+    # Meaningful identifier.
+    # All pods share the same label even they have different name.
+    matchLabels:
+      app: mongodb # All pods that match the labels
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      containers:
+        - name: mongodb
+          image: mongo:5.0
+          ports:
+            - containerPort: 27017
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-secret
+                  key: mongo-user
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-secret
+                  key: mongo-password
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo-service
+spec:
+  selector:
+    # Service must know which pods to forward
+    # Use label of pods
+    app.kubernetes.io/name: mongodb # Match deployment name
+  ports:
+    - protocol: TCP
+      port: 27017 # Which port for request
+      targetPort: 27017 # Port of pods (should be same as container pords)
